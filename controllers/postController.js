@@ -45,6 +45,26 @@ const createPost = async (req, res) => {
       }
     }
 
+    // User Mentions Scan
+    const mentionRegex = /@(\w+)/g;
+    let match;
+    const mentions = [];
+    while ((match = mentionRegex.exec(content)) !== null) {
+      mentions.push(match[1]);
+    }
+    if (mentions.length > 0) {
+      const users = await User.find({ username: { $in: mentions } });
+      for (const u of users) {
+        await createNotification({
+          recipient: u._id,
+          sender: req.user._id,
+          type: 'mention',
+          post: post._id,
+          commentText: 'mentioned you in a post',
+        });
+      }
+    }
+
     await post.populate('author', 'username profilePhoto');
     res.status(201).json(post);
   } catch (err) {
@@ -64,6 +84,10 @@ const getFeed = async (req, res) => {
     })
       .populate('author', 'username profilePhoto role')
       .populate('comments.user', 'username profilePhoto')
+      .populate({
+        path: 'repostOf',
+        populate: { path: 'author', select: 'username profilePhoto role' }
+      })
       .sort({ createdAt: -1 })
       .limit(50);
 
@@ -90,6 +114,11 @@ const getUserPosts = async (req, res) => {
   try {
     const posts = await Post.find({ author: req.params.userId })
       .populate('author', 'username profilePhoto')
+      .populate('comments.user', 'username profilePhoto')
+      .populate({
+        path: 'repostOf',
+        populate: { path: 'author', select: 'username profilePhoto role' }
+      })
       .sort({ createdAt: -1 });
     res.json(posts);
   } catch (err) {
@@ -213,9 +242,50 @@ const likeComment = async (req, res) => {
 
     await post.save();
     res.json({ likes: comment.likes.length, liked: !alreadyLiked });
+// POST /api/posts/:id/repost
+const repostPost = async (req, res) => {
+  try {
+    const originalPost = await Post.findById(req.params.id);
+    if (!originalPost) return res.status(404).json({ message: 'Original post not found' });
+
+    // Create a new post referencing the original one
+    const post = await Post.create({
+      author: req.user._id,
+      content: `reposted @${(await originalPost.populate('author', 'username')).author.username}'s post`,
+      category: 'general',
+      repostOf: originalPost._id
+    });
+
+    // Notify original author
+    await createNotification({
+      recipient: originalPost.author,
+      sender: req.user._id,
+      type: 'comment',
+      post: post._id,
+      commentText: 'reposted your thought'
+    });
+
+    await post.populate('author', 'username profilePhoto');
+    await post.populate({
+      path: 'repostOf',
+      populate: { path: 'author', select: 'username profilePhoto role' }
+    });
+
+    res.status(201).json(post);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-module.exports = { createPost, getFeed, getCampusUpdates, getUserPosts, likePost, addComment, deletePost, flagPost, likeComment };
+module.exports = { 
+  createPost, 
+  getFeed, 
+  getCampusUpdates, 
+  getUserPosts, 
+  likePost, 
+  addComment, 
+  deletePost, 
+  flagPost, 
+  likeComment,
+  repostPost
+};

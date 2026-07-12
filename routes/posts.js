@@ -4,13 +4,15 @@ const { protect, adminOnly } = require('../middleware/authMiddleware');
 const { upload } = require('../config/cloudinary');
 const {
   createPost, getFeed, getCampusUpdates,
-  getUserPosts, likePost, addComment, deletePost, flagPost, likeComment
+  getUserPosts, likePost, addComment, deletePost, flagPost, likeComment,
+  repostPost
 } = require('../controllers/postController');
 
 router.get('/feed',                      protect, getFeed);
 router.get('/campus-updates',            protect, getCampusUpdates);
 router.get('/user/:userId',              protect, getUserPosts);
 router.post('/',                         protect, upload.single('image'), createPost);
+router.post('/:id/repost',               protect, repostPost);
 router.put('/:id/like',                  protect, likePost);
 router.post('/:id/comment',              protect, addComment);
 router.put('/:id/comment/:commentId/like', protect, likeComment);

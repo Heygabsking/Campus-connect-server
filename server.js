@@ -37,6 +37,8 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/stories', require('./routes/stories'));
 app.use('/api/reels', require('./routes/reels'));
+app.use('/api/chats', require('./routes/chats'));
+app.use('/api/lecturers', require('./routes/lecturers'));
 
 // Test route
 app.get('/', (req, res) => {

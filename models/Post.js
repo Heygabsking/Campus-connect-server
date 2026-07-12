@@ -15,6 +15,7 @@ const postSchema = new mongoose.Schema({
   comments: [commentSchema],
   isFlagged: { type: Boolean, default: false },
   flagReason: { type: String, default: '' },
+  repostOf: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Post', postSchema);
