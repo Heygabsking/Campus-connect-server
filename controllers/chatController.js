@@ -108,9 +108,36 @@ const sendMessage = async (req, res) => {
   }
 };
 
+const deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ message: 'Message not found' });
+
+    if (message.sender.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You can only unsend your own messages' });
+    }
+
+    const chatId = message.chat;
+    await Message.findByIdAndDelete(messageId);
+
+    const chat = await Chat.findById(chatId);
+    if (chat && chat.lastMessage && chat.lastMessage.toString() === messageId) {
+      const nextLatest = await Message.findOne({ chat: chatId }).sort({ createdAt: -1 });
+      chat.lastMessage = nextLatest ? nextLatest._id : null;
+      await chat.save();
+    }
+
+    res.json({ success: true, messageId });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   findOrCreateChat,
   getChats,
   getMessages,
-  sendMessage
+  sendMessage,
+  deleteMessage
 };
