@@ -6,6 +6,10 @@ const connectDB = async () => {
     const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
 
+    // Sync Story model indexes to ensure TTL expires index is active in database
+    const Story = require('../models/Story');
+    await Story.syncIndexes().catch(() => {});
+
     // Seed default admin if none exists
     const adminExists = await User.findOne({ role: 'admin' });
     if (!adminExists) {

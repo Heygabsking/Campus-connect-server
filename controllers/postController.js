@@ -250,20 +250,20 @@ const likeComment = async (req, res) => {
 // POST /api/posts/:id/repost
 const repostPost = async (req, res) => {
   try {
-    const originalPost = await Post.findById(req.params.id);
+    const originalPost = await Post.findById(req.params.id).populate('author', 'username');
     if (!originalPost) return res.status(404).json({ message: 'Original post not found' });
 
     // Create a new post referencing the original one
     const post = await Post.create({
       author: req.user._id,
-      content: `reposted @${(await originalPost.populate('author', 'username')).author.username}'s post`,
+      content: `reposted @${originalPost.author?.username || 'user'}'s post`,
       category: 'general',
       repostOf: originalPost._id
     });
 
     // Notify original author
     await createNotification({
-      recipient: originalPost.author,
+      recipient: originalPost.author?._id || originalPost.author,
       sender: req.user._id,
       type: 'comment',
       post: post._id,
