@@ -1,5 +1,6 @@
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
+const User = require('../models/User');
 
 // POST /api/chats/find-or-create
 const findOrCreateChat = async (req, res) => {
