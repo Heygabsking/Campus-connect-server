@@ -14,6 +14,7 @@ const postSchema = new mongoose.Schema({
   likes:    [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   comments: [commentSchema],
   isFlagged: { type: Boolean, default: false },
+  flagReason: { type: String, default: '' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Post', postSchema);

@@ -1,6 +1,7 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
 const { createNotification } = require('./notificationController');
+const { moderateContent } = require('../utils/moderation');
 
 // POST /api/posts
 const createPost = async (req, res) => {
@@ -12,12 +13,37 @@ const createPost = async (req, res) => {
     if (category === 'campus-update' && req.user.role !== 'admin')
       return res.status(403).json({ message: 'Only admins can post campus updates' });
 
+    // Content moderation scanner
+    let isFlagged = false;
+    let flagReason = '';
+    const modResult = moderateContent(content, req.file?.originalname || '');
+    if (modResult.flagged) {
+      isFlagged = true;
+      flagReason = modResult.reason;
+    }
+
     const post = await Post.create({
       author: req.user._id,
       content,
       imageUrl: req.file?.path || '',
       category: category || 'general',
+      isFlagged,
+      flagReason,
     });
+
+    if (isFlagged) {
+      // Notify all admins about flagged post
+      const admins = await User.find({ role: 'admin' });
+      for (const admin of admins) {
+        await createNotification({
+          recipient: admin._id,
+          sender: req.user._id,
+          type: 'comment',
+          post: post._id,
+          commentText: `⚠️ FLAG ALERT: Post by @${req.user.username} was flagged. Reason: ${flagReason}`,
+        });
+      }
+    }
 
     await post.populate('author', 'username profilePhoto');
     res.status(201).json(post);
