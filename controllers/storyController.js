@@ -84,8 +84,27 @@ const viewStory = async (req, res) => {
   }
 };
 
+// DELETE /api/stories/:id
+const deleteStory = async (req, res) => {
+  try {
+    const story = await Story.findById(req.params.id);
+    if (!story) return res.status(404).json({ message: 'Story not found' });
+
+    // Owner or admin can delete
+    if (story.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to delete this story' });
+    }
+
+    await story.deleteOne();
+    res.json({ message: 'Story deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createStory,
   getStories,
-  viewStory
+  viewStory,
+  deleteStory
 };

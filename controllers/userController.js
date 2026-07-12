@@ -17,12 +17,17 @@ const getProfile = async (req, res) => {
 // PUT /api/users/profile
 const updateProfile = async (req, res) => {
   try {
-    const { bio, username } = req.body;
+    const { bio, username, removePhoto } = req.body;
     const user = await User.findById(req.user._id);
 
     if (username) user.username = username;
     if (bio !== undefined) user.bio = bio;
-    if (req.file?.path) user.profilePhoto = req.file.path;
+    
+    if (removePhoto === 'true' || removePhoto === true) {
+      user.profilePhoto = '';
+    } else if (req.file?.path) {
+      user.profilePhoto = req.file.path;
+    }
 
     await user.save();
     res.json({ _id: user._id, username: user.username, bio: user.bio, profilePhoto: user.profilePhoto });
