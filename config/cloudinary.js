@@ -23,7 +23,10 @@ if (isCloudinaryConfigured) {
 
   storage = new CloudinaryStorage({
     cloudinary,
-    params: { folder: 'campusconnect', allowed_formats: ['jpg', 'jpeg', 'png', 'webp'] },
+    params: { 
+      folder: 'campusconnect',
+      resource_type: 'auto'
+    },
   });
   console.log('☁️ Cloudinary storage configured.');
 } else {
