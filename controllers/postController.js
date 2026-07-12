@@ -242,6 +242,11 @@ const likeComment = async (req, res) => {
 
     await post.save();
     res.json({ likes: comment.likes.length, liked: !alreadyLiked });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // POST /api/posts/:id/repost
 const repostPost = async (req, res) => {
   try {
