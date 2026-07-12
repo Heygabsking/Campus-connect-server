@@ -7,7 +7,7 @@ const generateToken = (id) =>
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { email, username, password } = req.body;
+    const { email, username, password, role } = req.body;
 
     if (!email || !username || !password)
       return res.status(400).json({ message: 'All fields are required' });
@@ -18,7 +18,7 @@ const register = async (req, res) => {
     if (await User.findOne({ username }))
       return res.status(400).json({ message: 'Username already taken' });
 
-    const user = await User.create({ email, username, passwordHash: password });
+    const user = await User.create({ email, username, passwordHash: password, role: role || 'student' });
 
     res.status(201).json({
       _id: user._id, email: user.email, username: user.username,

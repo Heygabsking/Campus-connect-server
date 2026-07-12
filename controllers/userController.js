@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Post = require('../models/Post');
 const PDFDocument = require('pdfkit');
+const { createNotification } = require('./notificationController');
 
 // GET /api/users/:id
 const getProfile = async (req, res) => {
@@ -47,6 +48,12 @@ const followUser = async (req, res) => {
     } else {
       me.following.push(target._id);
       target.followers.push(me._id);
+      
+      await createNotification({
+        recipient: target._id,
+        sender: me._id,
+        type: 'follow'
+      });
     }
 
     await me.save();

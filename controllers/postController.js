@@ -1,5 +1,6 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
+const { createNotification } = require('./notificationController');
 
 // POST /api/posts
 const createPost = async (req, res) => {
@@ -81,6 +82,12 @@ const likePost = async (req, res) => {
       post.likes = post.likes.filter(id => id.toString() !== req.user._id.toString());
     } else {
       post.likes.push(req.user._id);
+      await createNotification({
+        recipient: post.author,
+        sender: req.user._id,
+        type: 'like',
+        post: post._id
+      });
     }
     await post.save();
     res.json({ likes: post.likes.length, liked: !alreadyLiked });
@@ -101,7 +108,18 @@ const addComment = async (req, res) => {
     post.comments.push({ user: req.user._id, text });
     await post.save();
     await post.populate('comments.user', 'username profilePhoto');
-    res.status(201).json(post.comments[post.comments.length - 1]);
+
+    const newComment = post.comments[post.comments.length - 1];
+    await createNotification({
+      recipient: post.author,
+      sender: req.user._id,
+      type: 'comment',
+      post: post._id,
+      commentId: newComment._id,
+      commentText: text
+    });
+
+    res.status(201).json(newComment);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -138,4 +156,40 @@ const flagPost = async (req, res) => {
   }
 };
 
-module.exports = { createPost, getFeed, getCampusUpdates, getUserPosts, likePost, addComment, deletePost, flagPost };
+// PUT /api/posts/:id/comment/:commentId/like
+const likeComment = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) return res.status(404).json({ message: 'Comment not found' });
+
+    if (!comment.likes) {
+      comment.likes = [];
+    }
+
+    const alreadyLiked = comment.likes.includes(req.user._id);
+    if (alreadyLiked) {
+      comment.likes = comment.likes.filter(id => id.toString() !== req.user._id.toString());
+    } else {
+      comment.likes.push(req.user._id);
+      
+      await createNotification({
+        recipient: comment.user,
+        sender: req.user._id,
+        type: 'comment-like',
+        post: post._id,
+        commentId: comment._id,
+        commentText: comment.text
+      });
+    }
+
+    await post.save();
+    res.json({ likes: comment.likes.length, liked: !alreadyLiked });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { createPost, getFeed, getCampusUpdates, getUserPosts, likePost, addComment, deletePost, flagPost, likeComment };
