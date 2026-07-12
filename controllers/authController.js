@@ -18,6 +18,13 @@ const register = async (req, res) => {
     if (await User.findOne({ username }))
       return res.status(400).json({ message: 'Username already taken' });
 
+    if (role === 'admin') {
+      const adminCount = await User.countDocuments({ role: 'admin' });
+      if (adminCount >= 3) {
+        return res.status(400).json({ message: 'Maximum limit of admin accounts (3) reached' });
+      }
+    }
+
     const user = await User.create({ email, username, passwordHash: password, role: role || 'student' });
 
     res.status(201).json({
