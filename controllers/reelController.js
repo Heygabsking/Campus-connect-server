@@ -121,9 +121,28 @@ const commentReel = async (req, res) => {
   }
 };
 
+// DELETE /api/reels/:id
+const deleteReel = async (req, res) => {
+  try {
+    const reel = await Reel.findById(req.params.id);
+    if (!reel) return res.status(404).json({ message: 'Reel not found' });
+
+    // Author or admin can delete
+    if (reel.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to delete this reel' });
+    }
+
+    await reel.deleteOne();
+    res.json({ message: 'Reel deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createReel,
   getReels,
   likeReel,
-  commentReel
+  commentReel,
+  deleteReel
 };
