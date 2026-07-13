@@ -205,6 +205,24 @@ const deleteReview = async (req, res) => {
   }
 };
 
+// DELETE /api/lecturers/paper/:paperId
+const deletePastPaper = async (req, res) => {
+  try {
+    const pastPaper = await PastPaper.findById(req.params.paperId);
+    if (!pastPaper) return res.status(404).json({ message: 'Past paper not found' });
+
+    // Auth check: owner or admin
+    if (pastPaper.uploadedBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to delete this past paper' });
+    }
+
+    await PastPaper.findByIdAndDelete(req.params.paperId);
+    res.json({ message: 'Past paper deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createLecturer,
   getLecturers,
@@ -214,5 +232,6 @@ module.exports = {
   updateLecturer,
   deleteLecturer,
   editReview,
-  deleteReview
+  deleteReview,
+  deletePastPaper
 };
