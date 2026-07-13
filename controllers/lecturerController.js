@@ -162,6 +162,49 @@ const deleteLecturer = async (req, res) => {
   }
 };
 
+// PUT /api/lecturers/review/:reviewId
+const editReview = async (req, res) => {
+  try {
+    const { rating, recommend, comment, courseCode } = req.body;
+    const review = await Review.findById(req.params.reviewId);
+    if (!review) return res.status(404).json({ message: 'Review not found' });
+
+    // Auth check: must be owner or admin
+    if (review.student.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to edit this review' });
+    }
+
+    if (rating !== undefined) review.rating = Number(rating);
+    if (recommend !== undefined) review.recommend = recommend === 'true' || recommend === true;
+    if (comment !== undefined) review.comment = comment;
+    if (courseCode !== undefined) review.courseCode = courseCode;
+
+    await review.save();
+    await review.populate('student', 'username profilePhoto');
+    res.json(review);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// DELETE /api/lecturers/review/:reviewId
+const deleteReview = async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.reviewId);
+    if (!review) return res.status(404).json({ message: 'Review not found' });
+
+    // Auth check: must be owner or admin
+    if (review.student.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to delete this review' });
+    }
+
+    await Review.findByIdAndDelete(req.params.reviewId);
+    res.json({ message: 'Review deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createLecturer,
   getLecturers,
@@ -169,5 +212,7 @@ module.exports = {
   addReview,
   uploadPastPaper,
   updateLecturer,
-  deleteLecturer
+  deleteLecturer,
+  editReview,
+  deleteReview
 };
