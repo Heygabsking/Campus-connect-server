@@ -127,10 +127,47 @@ const uploadPastPaper = async (req, res) => {
   }
 };
 
+// PUT /api/lecturers/:id
+const updateLecturer = async (req, res) => {
+  try {
+    const { name, department } = req.body;
+    const lecturer = await Lecturer.findById(req.params.id);
+    if (!lecturer) return res.status(404).json({ message: 'Lecturer not found' });
+
+    if (name) lecturer.name = name;
+    if (department) lecturer.department = department;
+
+    await lecturer.save();
+    res.json(lecturer);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// DELETE /api/lecturers/:id
+const deleteLecturer = async (req, res) => {
+  try {
+    const lecturer = await Lecturer.findById(req.params.id);
+    if (!lecturer) return res.status(404).json({ message: 'Lecturer not found' });
+
+    await Promise.all([
+      Review.deleteMany({ lecturer: req.params.id }),
+      PastPaper.deleteMany({ lecturer: req.params.id }),
+      Lecturer.findByIdAndDelete(req.params.id)
+    ]);
+
+    res.json({ message: 'Lecturer and associated data deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createLecturer,
   getLecturers,
   getLecturerDetails,
   addReview,
-  uploadPastPaper
+  uploadPastPaper,
+  updateLecturer,
+  deleteLecturer
 };
