@@ -6,7 +6,10 @@ const { createNotification } = require('./notificationController');
 // GET /api/users/:id
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-passwordHash');
+    const user = await User.findById(req.params.id)
+      .select('-passwordHash')
+      .populate('followers', 'username profilePhoto')
+      .populate('following', 'username profilePhoto');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) {
