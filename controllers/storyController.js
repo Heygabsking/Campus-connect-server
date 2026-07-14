@@ -102,9 +102,44 @@ const deleteStory = async (req, res) => {
   }
 };
 
+// PUT /api/stories/:id/like
+const likeStory = async (req, res) => {
+  try {
+    const story = await Story.findById(req.params.id);
+    if (!story) return res.status(404).json({ message: 'Story not found' });
+
+    // Fallback if likes array doesn't exist
+    if (!story.likes) {
+      story.likes = [];
+    }
+
+    const isLiked = story.likes.includes(req.user._id);
+    if (isLiked) {
+      story.likes = story.likes.filter(id => id.toString() !== req.user._id.toString());
+    } else {
+      story.likes.push(req.user._id);
+
+      if (story.user.toString() !== req.user._id.toString()) {
+        await createNotification({
+          recipient: story.user,
+          sender: req.user._id,
+          type: 'like',
+          post: null
+        });
+      }
+    }
+
+    await story.save();
+    res.json({ liked: !isLiked, likes: story.likes });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createStory,
   getStories,
   viewStory,
-  deleteStory
+  deleteStory,
+  likeStory
 };

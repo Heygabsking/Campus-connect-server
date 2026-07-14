@@ -5,6 +5,7 @@ const storySchema = new mongoose.Schema({
   mediaUrl:   { type: String, required: true },
   mediaType:  { type: String, enum: ['image', 'video'], required: true },
   views:      [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  likes:      [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   isFlagged:  { type: Boolean, default: false },
   flagReason: { type: String, default: '' },
   createdAt:  { type: Date, default: Date.now, expires: 86400 } // 24 hours TTL
