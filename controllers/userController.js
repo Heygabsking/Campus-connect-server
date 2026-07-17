@@ -86,19 +86,26 @@ const searchUsers = async (req, res) => {
   }
 };
 
-// GET /api/users/:id/report  — PDF download
+// GET /api/users/:id/report — Generates a downloadable PDF report of user account stats and posts
 const generateReport = async (req, res) => {
   try {
+    // Fetches user details and user-created posts list in parallel
     const user  = await User.findById(req.params.id).select('-passwordHash');
     const posts = await Post.find({ author: req.params.id }).sort({ createdAt: -1 });
 
+    // Instantiates a PDF document streaming instance using pdfkit
     const doc = new PDFDocument({ margin: 50 });
+    // Configure response headers so the browser treats the response as a file attachment
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${user.username}-report.pdf"`);
+    
+    // Pipe the PDF binary write stream directly into the HTTP response stream
     doc.pipe(res);
 
+    // Write PDF title and styling metrics
     doc.fontSize(22).fillColor('#1F4E79').text('CampusConnect Activity Report', { align: 'center' });
     doc.moveDown();
+    // Write profile account statistics (followers count, posts counts)
     doc.fontSize(14).fillColor('#000').text(`Username: @${user.username}`);
     doc.text(`Email: ${user.email}`);
     doc.text(`Role: ${user.role}`);
@@ -106,9 +113,11 @@ const generateReport = async (req, res) => {
     doc.text(`Total Posts: ${posts.length}`);
     doc.moveDown();
 
+    // Section for student published posts
     doc.fontSize(16).fillColor('#1F4E79').text('Posts', { underline: true });
     doc.moveDown(0.5);
 
+    // Iterates posts array and draws titles, body text, and likes counters to PDF pages
     posts.forEach((post, i) => {
       doc.fontSize(11).fillColor('#333')
         .text(`${i + 1}. [${post.category.toUpperCase()}] ${new Date(post.createdAt).toLocaleDateString()}`, { continued: false });
@@ -117,6 +126,7 @@ const generateReport = async (req, res) => {
       doc.moveDown(0.5);
     });
 
+    // Close the document output stream to finish and send response
     doc.end();
   } catch (err) {
     res.status(500).json({ message: err.message });
