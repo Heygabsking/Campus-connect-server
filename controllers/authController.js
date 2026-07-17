@@ -72,4 +72,42 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+// POST /api/auth/forgot-password-verify
+// Verifies if a user exists with the requested email address
+const forgotPasswordVerify = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+    
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'No account registered with this email' });
+    
+    res.json({ success: true, username: user.username });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/auth/forgot-password-reset
+// Resets the password for the verified email address
+const forgotPasswordReset = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and new password are required' });
+    }
+    
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    // Update password (hashing will run in Mongoose pre-save hook automatically)
+    user.passwordHash = password;
+    await user.save();
+    
+    res.json({ success: true, message: 'Password reset successful' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { register, login, forgotPasswordVerify, forgotPasswordReset };
